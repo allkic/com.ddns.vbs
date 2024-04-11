@@ -13,13 +13,9 @@ import (
 )
 
 var (
-	logIp           = ""
-	Type            = "AAAA"
-	accessKeyId     = "" // 密钥ID
-	accessKeySecret = "" // 密钥签名
-	DomainURL       = ""
-	subdomain       = "test"
-	aliDnsServer    = "alidns.cn-hangzhou.aliyuncs.com"
+	logIp        = ""
+	Type         = "AAAA"
+	aliDnsServer = "alidns.cn-hangzhou.aliyuncs.com"
 )
 
 func getIpv6() string {
@@ -61,6 +57,7 @@ func updateDomain(client *alidns.Client, data *alidns.DescribeDomainRecordsRespo
 		println(err)
 	}
 }
+
 func refreshDDNS(ipv6 string) {
 	result, err := createClient()
 	if err != nil {
@@ -69,7 +66,6 @@ func refreshDDNS(ipv6 string) {
 	req := alidns.DescribeDomainRecordsRequest{
 		DomainName: tea.String(DomainURL),
 		Type:       tea.String(Type),
-		RRKeyWord:  tea.String(subdomain),
 	}
 	reuntime := &util.RuntimeOptions{}
 	func() (e error) {
@@ -82,9 +78,15 @@ func refreshDDNS(ipv6 string) {
 		if err != nil {
 			return err
 		}
+		domains := map[string]bool{
+			"test": true,
+			"ssh":  true,
+		}
 		data := res.Body.DomainRecords.Record
-		if data[0].Value != tea.String(ipv6) {
-			updateDomain(result, data[0], ipv6)
+		for _, item := range data {
+			if item.Value != tea.String(ipv6) && domains[string(*item.RR)] {
+				updateDomain(result, item, ipv6)
+			}
 		}
 		return nil
 	}()
