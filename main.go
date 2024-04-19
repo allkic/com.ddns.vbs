@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	alidns "github.com/alibabacloud-go/alidns-20150109/v4/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -16,6 +18,7 @@ var (
 	logIp        = ""
 	Type         = "AAAA"
 	aliDnsServer = "alidns.cn-hangzhou.aliyuncs.com"
+	Keys         = make(map[string]string)
 )
 
 func getIpv6() string {
@@ -36,8 +39,8 @@ func getIpv6() string {
 }
 func createClient() (result *alidns.Client, err error) {
 	config := openapi.Config{
-		AccessKeyId:     tea.String(accessKeyId),
-		AccessKeySecret: tea.String(accessKeySecret),
+		AccessKeyId:     tea.String(Keys["accessKeyId"]),
+		AccessKeySecret: tea.String(Keys["accessKeySecret"]),
 	}
 	config.Endpoint = tea.String(aliDnsServer)
 	result = &alidns.Client{}
@@ -64,7 +67,7 @@ func refreshDDNS(ipv6 string) {
 		println(err, "000000000")
 	}
 	req := alidns.DescribeDomainRecordsRequest{
-		DomainName: tea.String(DomainURL),
+		DomainName: tea.String(Keys["DomainURL"]),
 		Type:       tea.String(Type),
 	}
 	reuntime := &util.RuntimeOptions{}
@@ -95,6 +98,10 @@ func timer() {
 	ipv6 := getIpv6()
 	if ipv6 != logIp {
 		logIp = ipv6
+		file, _ := os.OpenFile("./config/auth.json", os.O_CREATE|os.O_RDWR, 0666)
+		defer file.Close()
+		decoder := json.NewDecoder(file)
+		_ = decoder.Decode(&Keys)
 		refreshDDNS(ipv6)
 	}
 	m := time.Second * 60
