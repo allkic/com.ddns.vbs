@@ -4,3 +4,4 @@
 output/
 go.sum
 config/
+node_modules/
